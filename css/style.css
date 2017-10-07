@@ -1,0 +1,194 @@
+html
+{
+	min-height: 100%;
+}
+
+body
+{
+	--grey: #222;
+	--light-grey: #CCC;
+	--dark-green: #00A676;
+	--main-green: #4DC773; 
+	margin: 0;
+	font-family: Helvetica;
+	position: relative;
+	height: 100%;
+}
+
+header
+{
+	background-color: var(--main-green);
+	margin: 0;
+	padding-top: 20px;
+	color: var(--grey);
+}
+
+/* nav */
+header h1
+{
+	margin-top: 0;
+	margin-left: 20px;
+}
+
+nav
+{
+	background-color: var(--dark-green);
+	display: flex;
+	width: 100%;
+}
+
+nav a
+{
+	text-align: center;
+	display: block;
+	padding: 10px 0;
+	flex-grow: 1;
+	text-decoration: none;
+	color: var(--grey);
+}
+
+nav a:hover
+{
+	background-color: var(--main-green);
+	opacity: .5;
+	color: black;
+}
+
+main
+{
+	margin: 20px 10%;
+	position: block;
+	clear: both;
+	height: 100%;
+	margin-bottom: 120px;
+}
+
+/* Product changes */
+.salePr
+{
+	color: var(--dark-green);
+}
+
+.priceStrike
+{
+	text-decoration: line-through;
+}
+
+.prod
+{
+	border-bottom: 1px solid var(--light-grey);
+	margin: 20px 0;
+	padding: 20px 0;
+	display: flex;
+}
+
+.prodDesc
+{
+	margin-left: 50px;
+	width: 65%;
+}
+
+.prodDesc h2
+{
+	margin-top: 0;
+}
+
+.prodImg
+{
+	width: 25%;
+	text-align: center;
+}
+
+.prod img, .prod img
+{
+    height: 200px;
+}
+
+#sales > h2, #products > h2
+{
+	font-size: 2em;
+	margin-left: 20px;
+	color: var(--grey);
+}
+
+/* sales specific changes */
+#sales .prodDesc h2:first-letter
+{
+	color: gold;
+}
+
+/* products specific changes */
+#products > h2
+{
+	margin-top: 50px;
+}
+
+#products div:last-child
+{
+	border: none;
+}
+
+/* Add to cart buttons */
+.cart
+{
+	font-size: 1em;
+	padding: 5px;
+	width: 150px;
+	height: 30px;
+	background-color: #FFF;
+	border-radius: 5px;
+	border: 1px solid var(--light-grey);
+}
+
+.cart:hover
+{
+	border: 1px solid var(--main-green);
+	color: var(--dark-green);
+	cursor: pointer;
+}
+
+/* Paging buttons */
+.page
+{
+	font-size: 1em;
+	padding: 5px;
+	width: 150px;
+	height: 30px;
+	color: var(--dark-green);
+	background-color: #FFF;
+	border: none;
+}
+
+.page:disabled
+{
+	color: var(--light-grey);
+}
+
+.page:hover:enabled
+{
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.page:first-of-type
+{
+	float: left;
+}
+
+.page:last-of-type
+{
+	float: right;
+}
+
+/* footer */
+footer
+{
+	margin-top: 70px;
+	height: 50px;
+	background-color: var(--main-green);
+	text-align: center;
+	width: 100%;
+	position: absolute;
+	bottom: 0;
+	padding-top: 20px;
+}
