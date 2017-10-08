@@ -8,8 +8,17 @@
 	$db = new DB();
 	echo '<main>'.$db -> getSaleTable();
 	
-	$page = ( empty(canGet('page')) ? 0 : canGet('page') );
-	echo $db -> getProdTable( $page ).'</main>';
+	$page = ( canGet('page') ? canGet('page') : 0 );
+	$table = $db -> getProdTable( $page ).'</main>';
+	
+	if( $table )
+	{
+		echo $table;
+	}
+	else
+	{
+		echo "<h2>Content Unavailable</h2>";
+	}
 	
 	echo footer();
 ?>

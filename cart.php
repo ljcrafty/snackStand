@@ -5,8 +5,14 @@
 	echo getHeader("Cart");
 	echo nav();
 	
-	//TEMPORARY PLZ REMOVE
-	echo "<main></main>";
+	$db = new DB();
+	$data = $db -> getCart();
+	$empty = ( $data != '' ? "<button id='empty' onclick='empty()'>Empty Cart</button>" : 
+		"<h2>There are no items in your cart! <a href='index.php'>Go Shopping!</a></h2>" );
+	
+	echo "<main>\n
+		$data\n
+		$empty</main>";
 	
 	echo footer();
 ?>
