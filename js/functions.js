@@ -71,6 +71,21 @@ function empty()
 	http.send();
 }
 
+function showSale()
+{
+	var saleDiv = document.getElementById("salePriceDiv");
+	console.log('called');
+	
+	if( saleDiv.style.display == 'none' )
+	{
+		saleDiv.style.display = 'block';
+	}
+	else
+	{
+		saleDiv.style.display = 'none';
+	}
+}
+
 /*
 	Moves from one page of products to the next
 	curPage		- the page of products the user is currently on

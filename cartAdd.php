@@ -6,7 +6,7 @@
 	{
 		require_once "DB.class.php";
 		
-		$id = canGet('id');
+		$id = intVal(canGet('id'));
 		
 		//increment cart and record num remaining
 		$db = new DB();

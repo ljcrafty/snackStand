@@ -26,10 +26,10 @@ class DB
 		Gets all of the items on sale or for sale in the database
 		$equals - a string containing whether the salePrice should
 					equal 0, or not equal 0. Only accepted values are
-					"=" and "!=". Default is "=".
+					"=" and "!=". Default is "=". '=' = prod, '!=' = sales
 		returns - an array of the sale or catalogue items
 	*/
-	function getSales( $equals )
+	function getSales( $equals = "=" )
 	{
 		if( $equals != '=' && $equals != '!=' )
 		{
@@ -61,6 +61,12 @@ class DB
 	*/
 	function getProdTable( $page = 0 )
 	{
+		if( !is_int(intVal($page)) || $page < 0 )
+		{
+			return "";
+		}
+		$page = intVal($page);
+
 		$data = $this -> getSales( '=' );
 		$len = count($data);
 		$pgeLen = ceil($len / 5);
@@ -89,10 +95,120 @@ class DB
 	*/
 	function getItem( $id )
 	{
+		if( !is_int(intVal($id)) || $id < 0 )
+		{
+			return array();
+		}
+
 		$query = "SELECT * FROM products WHERE id = :id";
-		$params = array('id' => $id);
+		$params = array('id' => intVal($id));
 		
 		return $this -> query($query, $params);
+	}
+	
+	/*
+		Updates an item in the products table in the database
+		$attrs	- the attributes to change in the database. Attributes
+					in the parameter should be as follows:
+						name: 			varchar(30)
+						description: 	mediumtext
+						quant:			int
+						imgName:		varchar(20)
+						price:			float
+						salePrice:		float
+						id:				tinyint(5)
+		returns	- the number of rows affected by the query. 0 if the query
+					failed for any reason.
+	*/
+	function updateItem( $attrs )
+	{
+		if( !validateAttrs($attrs) || $attrs['id'] < 0 || 
+			!$this -> checkSaleCount($attrs['id'], $attrs['salePrice'] != 0) )
+		{
+			return 0;
+		}
+		
+		$query = "UPDATE products SET name = :name, 
+			description = :desc, 
+			quant = :quant, 
+			imgName = :img, 
+			price = :price, 
+			salePrice = :sale
+			WHERE id = :id";
+		
+		//setup for params	
+		$id = $attrs['id'];
+		$name = $attrs['name'];
+		$desc = $attrs['description'];
+		$quant = $attrs['quant'];
+		$img = $attrs['imgName'];
+		$price = $attrs['price'];
+		$sale = $attrs['salePrice'];
+		
+		$params = array('name' => $name,
+			'desc' => $desc ,
+			'quant' => $quant ,
+			'img' => $img ,
+			'price' => $price ,
+			'sale' => $sale ,
+			'id' => $id);
+		
+		$result = $this -> query( $query, $params );
+		return $result;
+	}
+	
+	/*
+		Checks to see if an update can be made while still keeping the required 3-5 sale count
+		$id		- the id of the item that will be updated
+		$onSale	- whether or not the item will be on sale after the update
+		returns	- whether or not the update can occur given the number of items on sale after
+					the update
+	*/
+	function checkSaleCount( $id, $onSale )
+	{
+		//query for items on sale
+		$data = $this -> getSales('!=');
+		
+		if( $id < 0 )
+		{
+			return 0;
+		}
+		
+		$cur = $this -> getItem( $id );
+		
+		if( !$cur || !array_key_exists('salePrice', $cur[0]) )
+		{
+			return 0;
+		}
+		
+		switch( count($data) )
+		{
+			//short circuit for four items on sale because any change is ok
+			case 4:
+				return 1;
+			
+			//if 3 items on sale
+			case 3:
+				//if item is on sale and will be taken off, return 0
+				if( $cur[0]['salePrice'] != 0 && !$onSale )
+				{
+					return 0;
+				}
+				
+				//otherwise ok
+				return 1;
+				
+			//if 5 items on sale	
+			case 5:
+				//if item is not on sale and will be put on sale, return 0
+				if( $cur[0]['salePrice'] == 0 && $onSale )
+				{
+					return 0;
+				}
+				
+				//otherwise ok
+				return 1;
+		}
 	}
 	
 	/*
@@ -104,7 +220,12 @@ class DB
 	*/
 	function incrementCart( $id )
 	{
-		$params = array('id' => $id);
+		if( !is_int(intVal($id)) || $id < 0 )
+		{
+			return -1;
+		}
+
+		$params = array('id' => intVal($id));
 		$query = "SELECT * FROM `products` LEFT JOIN `cart` ON products.id = cart.id WHERE products.id = :id";
 		$result = $this -> query( $query, $params );
 		
@@ -188,6 +309,7 @@ class DB
 		$query = "SELECT * FROM cart JOIN products ON cart.id = products.id";
 		$result = $this -> query($query);
 		
+		//replace items that were in the cart
 		foreach( $result as $row )
 		{
 			$query = "UPDATE products SET quant = :quant WHERE id = :id";
@@ -201,6 +323,27 @@ class DB
 		$result = $this -> query($query);
 		
 		return $result != 0;
+	}
+
+	/*
+		Gets information about a user in the users table
+		$username	- the username of the row to get data for
+		returns		- the row for the given username or an empty array
+						if the username is not in the table
+	*/
+	function getUser( $username )
+	{
+		if( !is_string(strVal($username)) || strlen($username) > 25 )
+		{
+			return array();
+		}
+
+		$query = "SELECT * FROM users WHERE username = :user";
+		$params = array('user' => strVal($username));
+
+		$result = $this -> query($query, $params);
+
+		return $result;
 	}
 
 	//helper functions

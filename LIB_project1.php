@@ -1,4 +1,6 @@
 <?php
+	require_once "DB.class.php";
+
 	/*
 		Creates an HTML header for a file
 		$title	- the title to be included in the tab of the browser
@@ -18,6 +20,44 @@
 		  		<script src='js/notify.js'></script>
 		  	</head>
 		  	<body>\n";
+	}
+	
+	/*
+		Creates an HTML navigation bar for a file
+		returns	- the HTML nav bar for a file
+	*/
+	function nav()
+	{
+		return "<header>\n
+		<h1>Lauren's Snack Stand</h1>\n
+		<nav>
+			<a href='index.php'>Home</a>\n
+			<a href='cart.php'>Cart</a>\n
+			<a href='login.php'>Admin</a>
+		</nav>
+		</header>\n
+		<div id='alert'></div>";
+	}
+
+	/*
+		Gets the login form and any notifications necessary
+		$msg	- the message to show in a notification, if any. The message
+					will appear as an error
+		returns	- the HTML to show the login form and notifications
+	*/
+	function getLogin( $msg )
+	{
+		return "<main>
+			<form action='login.php' method='POST' id='login'>\n
+				<div><span>Username: </span><input type='text' name='username' id='user'/></div>\n
+				<div><span>Password: </span><input type='password' name='password' /></div>\n
+				<input type='submit' value='Login'/>
+			</form>\n
+		</main>\n
+		<script>
+			document.getElementById('user').focus();
+			$.notify('$msg', {position: 'top center', className: 'error'});
+		</script>";
 	}
 	
 	/*
@@ -43,22 +83,155 @@
 		
 		return $str;
 	}
-
+	
 	/*
-		Creates an HTML navigation bar for a file
-		returns	- the HTML nav bar for a file
+		Gets the table of products, but more consolidated for the admin to edit
+		returns	- the HTML for the admin table of products
 	*/
-	function nav()
+	function getAdminTable()
 	{
-		return "<header>\n
-		<h1>Lauren's Snack Stand</h1>\n
-		<nav>
-			<a href='index.php'>Home</a>\n
-			<a href='cart.php'>Cart</a>\n
-			<a href='login.php'>Admin</a>
-		</nav>
-		</header>\n
-		<div id='alert'></div>";
+		$db = new DB();
+		$sale = $db -> getSales("!=");
+		$catalogue = $db -> getSales();
+		
+		$str = "<h2 class='tweenTable'>Sale Items</h2>\n<table>\n
+			<tr><th>&nbsp;</th><th>Name</th><th>Description</th>
+			<th>Original Price</th><th>Sale Price</th><th>Quantity</th>
+			<th>Image Name</th></tr>";
+		
+		foreach($sale as $item)
+		{
+			$salePr = number_format($item['salePrice'], 2, '.', '');
+			$price = number_format($item['price'], 2, '.', '');
+			$str .= "\n<tr>
+				<td><a href='edit.php?id={$item['id']}'>Edit</a></td>
+				<td>{$item['name']}</td>
+				<td>{$item['description']}</td>
+				<td>\${$price}</td>
+				<td>\${$salePr}</td>
+				<td>{$item['quant']}</td>
+				<td>{$item['imgName']}</td>
+			</tr>";
+		}
+		
+		$str .= "</table>\n<h2 class='tweenTable'>Catalogue Items</h2>\n<table>
+			<tr><th>&nbsp;</th><th>Name</th><th>Description</th>
+			<th>Price</th><th>Quantity</th>
+			<th>Image Name</th></tr>";
+		
+		foreach($catalogue as $item)
+		{
+			$price = number_format($item['price'], 2, '.', '');
+			$str .= "\n<tr>
+				<td><a href='edit.php?id={$item['id']}'>Edit</a></td>
+				<td>{$item['name']}</td>
+				<td>{$item['description']}</td>
+				<td>\${$price}</td>
+				<td>{$item['quant']}</td>
+				<td>{$item['imgName']}</td>
+			</tr>";
+		}
+		
+		$str .= "</table>";
+		
+		return $str;
+	}
+	
+	/*
+		Creates a form to edit an item including the existing info for the item. Can
+			also create a form for adding an item to the database
+		$id		- the id of the item to edit. If a new item is being added, id should be -1.
+					Default is -1.
+		returns	- the HTML to create a form to edit or add an item in the database
+	*/
+	function getEditForm( $id = -1 )
+	{	
+		$id = intVal($id);
+		$db = new DB();
+		
+		//giving blank form
+		if( $id == -1 || !is_int($id) )
+		{
+			$id = -1;
+			$isSale = false;
+			$name = '';
+			$desc = '';
+			$salePr = 0;
+			$price = 0;
+			$quantity = 0;
+			$imgName = '';
+		}
+		else
+		{
+			$item = $db -> getItem( $id );
+			
+			//bad id
+			if( empty($item) )
+			{
+				$id = -1;
+				$isSale = false;
+				$name = '';
+				$desc = '';
+				$salePr = 0;
+				$price = 0;
+				$quantity = 0;
+				$imgName = '';
+			}
+			else
+			{
+				$data = $item[0];
+				
+				$name = $data['name'];
+				$desc = $data['description'];
+				$salePr = $data['salePrice'];
+				$price = $data['price'];
+				$quantity = $data['quant'];
+				$imgName = $data['imgName'];
+				$isSale = $data['salePrice'] != 0;
+			}
+		}
+		$checked = ($isSale ? "checked" : "");
+		$saleInput = (!$isSale ? "style='display: none'" : "");
+		$title = ($name == '' ? "Add Item" : "Edit $name");
+		
+		$str = "<h3>$title</h3>\n
+		<form action='edit.php' method='POST' id='edit'>
+			<input style='display: none' name='id' value='$id'/>\n
+			<div><span>Name: </span><input name='name' value='$name'/></div>\n
+			<div><span>Description: </span><textarea name='description'>$desc</textarea></div>\n
+			<div><span>Quantity: </span><input name='quant' value='$quantity'/></div>\n
+			<div><span>Image Name: </span><input name='imgName' value='$imgName'/></div>\n
+			<div><span>Price: </span><input name='price' value='$price'/></div>\n
+			<div>
+				<label for='isSale'>On Sale: </label><input onchange='showSale()' name='isSale' type='checkbox' $checked/>
+			</div>\n
+			<div id='salePriceDiv' $saleInput>
+				<span>Sale Price: </span><input type='text' name='salePrice' value='$salePr'/>
+			</div>\n
+			<input type='submit' value='Save' />\n
+			<input type='button' onclick='window.location=\"admin.php\"' value='Cancel'/>\n
+		</form>";
+		
+		return $str;
+	}
+	
+	/*
+		Gets the end of the edit page with some notifications if necessary
+		$id		- the id of the item being edited
+		$msg	- the message to show as a notification (or empty string for
+					no message)
+	*/
+	function getEditEndPage( $id, $msg )
+	{
+		$str = "<main>".getEditForm($id)."
+			<script>
+				$.notify('$msg', {position: 'top center', className: 'error'});
+			</script>	
+		</main>";
+	
+		$str .= footer();
+		 
+		return $str;
 	}
 	
 	/*
@@ -69,6 +242,42 @@
 	function footer()
 	{
 		return "<footer>By Lauren Johnston</footer>\n</body></html>";
+	}
+	
+	/*
+		Validates an array of attributes to be used in editing an item
+		$attrs	- the attributes to validate
+		returns	- 0 if there is an error, 1 if there is not
+	*/
+	function validateAttrs( $attrs )
+	{
+		//checking for correct keys
+		if( !array_key_exists('id', $attrs) || !array_key_exists('name', $attrs) ||
+			!array_key_exists('description', $attrs) || !array_key_exists('quant', $attrs) || 
+			!array_key_exists('imgName', $attrs) || !array_key_exists('salePrice', $attrs) || 
+			!array_key_exists('price', $attrs) )
+		{
+			return 0;
+		}
+		
+		$id = $attrs['id'];
+		$name = $attrs['name'];
+		$desc = $attrs['description'];
+		$quant = $attrs['quant'];
+		$img = $attrs['imgName'];
+		$price = $attrs['price'];
+		$sale = $attrs['salePrice'];
+		
+		//checking for correct values
+		if( !is_int(intVal($id)) || !is_string($name) || strlen($name) > 30 || 
+			!is_string($desc) || !is_int(intVal($quant)) || $quant < 0 ||
+			!is_string($img) || !is_float(floatval($price)) || $price <= 0 || 
+			!is_float(floatVal($sale)) || $sale = 0 )
+		{
+			return 0;
+		}
+		
+		return 1;
 	}
 	
 	/*

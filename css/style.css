@@ -26,7 +26,6 @@ header
 main
 {
 	margin: 20px 10%;
-	position: block;
 	clear: both;
 	height: 100%;
 	margin-bottom: 0;
@@ -148,7 +147,8 @@ nav a:hover
 }
 
 /* Paging buttons */
-.page, #empty
+.page, 
+#empty
 {
 	font-size: 1em;
 	width: 150px;
@@ -163,7 +163,8 @@ nav a:hover
 	color: var(--light-grey);
 }
 
-.page:hover:enabled, #empty:hover
+.page:hover:enabled, 
+#empty:hover
 {
 	text-decoration: underline;
 	cursor: pointer;
@@ -197,6 +198,138 @@ nav a:hover
 	height: 35px;
 	padding-right: 10px;
 	align-self: flex-end;
+}
+
+/* login */
+#login
+{
+	width: 400px;
+	margin: 50px auto;
+}
+
+form > input/* submit button */
+{
+	margin: 0 auto;
+	width: 100px;
+	height: 25px;
+	background-color: var(--main-green);
+	border: none;
+	border-radius: 5px;
+	font-size: .8em;
+}
+
+form > input:hover
+{
+	background-color: var(--dark-green);
+	cursor: pointer;
+}
+
+#login span
+{
+	width: 100px;
+	display: inline-block;
+}
+
+form div, 
+form > input
+{
+	display: block;
+	margin-bottom: 20px;
+}
+
+form div
+{
+	text-align: center;
+}
+
+/* admin page */
+table
+{
+	border-collapse: collapse;
+}
+
+tr:hover
+{
+	background-color: #a8edbd;
+}
+
+th, td
+{
+	border: 1px solid var(--grey);
+	padding: 5px;
+	min-width: 40px;
+}
+
+th
+{
+	background-color: var(--main-green);
+	height: 50px;
+}
+
+#addItem
+{
+	width: 100%;
+	height: 50px;
+	font-size: 1em;
+	background-color: var(--main-green);
+	border: none;
+	border-radius: 5px;
+}
+
+#addItem:hover
+{
+	background-color: var(--dark-green);
+	cursor: pointer;
+}
+
+.tweenTable
+{
+	margin-top: 40px;
+}
+
+/* edit item page */
+#edit,
+h3
+{
+	width: 340px;
+	margin: 50px auto;
+}
+
+#edit span,
+#edit label
+{
+	width: 130px;
+	display: inline-block;
+	text-align: left;
+	vertical-align: top;
+} 
+
+#edit input,
+#edit textarea
+{
+	width: 200px;
+}
+
+#edit textarea
+{
+	height: 100px;
+}
+
+#edit > input
+{
+	width: 49%;
+	display: inline-block;
+	margin: 20px 0 0;
+}
+
+#edit > input:last-child
+{
+	background-color: var(--light-grey);
+}
+
+#edit > input:last-child:hover
+{
+	background-color: #AAA;
 }
 
 /* footer */
