@@ -200,7 +200,7 @@
 			<div><span>Name: </span><input name='name' value='$name'/></div>\n
 			<div><span>Description: </span><textarea name='description'>$desc</textarea></div>\n
 			<div><span>Quantity: </span><input name='quant' value='$quantity'/></div>\n
-			<div><span>Image Name: </span><input name='imgName' value='$imgName'/></div>\n
+			<div><label for='imgName'>Choose a file to upload:</label><input name='imgName' type='file' /></div>\n
 			<div><span>Price: </span><input name='price' value='$price'/></div>\n
 			<div>
 				<label for='isSale'>On Sale: </label><input onchange='showSale()' name='isSale' type='checkbox' $checked/>
@@ -214,6 +214,7 @@
 		
 		return $str;
 	}
+	//<span>Image Name: </span><input name='imgName' value='$imgName'/>
 	
 	/*
 		Gets the end of the edit page with some notifications if necessary
@@ -242,6 +243,25 @@
 	function footer()
 	{
 		return "<footer>By Lauren Johnston</footer>\n</body></html>";
+	}
+	
+	/*
+		Overwrites the sales price if the isSale flag is not turned on. Accounts
+			for when the UI does not show the sale price to the user, but a value is entered.
+			It is assumed that validateAttrs has been run.
+		$attrs	- the attributes to be checked
+		returns	- an array with the changed value if necessary
+	*/
+	function overwriteSales( $attrs )
+	{
+		$temp = $attrs;
+		
+		if( !array_key_exists('isSale', $temp ) )
+		{
+			$temp['salePrice'] = 0;
+		}
+		
+		return $temp;
 	}
 	
 	/*

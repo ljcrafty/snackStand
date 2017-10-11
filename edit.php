@@ -17,26 +17,26 @@
 			die();
 		}
 		
+		$db = new DB();
+		
 		//add item instead of update
 		if( $_POST['id'] == -1 )
 		{
-			echo "add coming later";
+			///////////////////////////////////////////////////////////////////////////////////////
+			//need to add thing here and in else to deal with image and collect the right imgName//
+			/////////////////////////////////////////////////////////////////////////////////////// 
+			$temp = overwriteSales($_POST);
 			
-			//on success, header("Location: admin.php?msg='Item added'");
-			die();
+			$result = $db -> addItem($temp);
 		}
-		
-		//update start
-		//overriding sale price if taken off sale
-		$temp = $_POST;
-		
-		if( !array_key_exists('isSale', $temp ) )
+		else
 		{
-			$temp['salePrice'] = 0;
-		}
+			//update start
+			//overriding sale price if taken off sale
+			$temp = overwriteSales($_POST);
 		
-		$db = new DB();
-		$result = $db -> updateItem($temp);
+			$result = $db -> updateItem($temp);
+		}
 		
 		//query returned 0 rows
 		if( !$result )
@@ -45,8 +45,7 @@
 			die();
 		}
 		
-		echo getEditEndPage($_POST['id'], '')."<script>
-			$.notify('Changes Saved', {position: 'top center', className: 'success'})</script>";
+		header("Location: admin.php?msg='Changes Saved'");;
 		die();
 	}
 	

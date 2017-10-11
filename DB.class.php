@@ -158,25 +158,79 @@ class DB
 	}
 	
 	/*
+		Adds an item in the products table in the database
+		$attrs	- the attributes to add in the database. Attributes
+					in the parameter should be as follows:
+						name: 			varchar(30)
+						description: 	mediumtext
+						quant:			int
+						imgName:		varchar(20)
+						price:			float
+						salePrice:		float
+					An id attribute will be ignored and the item will be added
+					as the next possible index in the database
+		returns	- the number of rows affected by the query. 0 if the query
+					failed for any reason.
+	*/
+	function addItem( $attrs )
+	{
+		if( !validateAttrs($attrs) || 
+			!$this -> checkSaleCount($attrs['id'], $attrs['salePrice'] != 0, $attrs) )
+		{
+			return 0;
+		}
+		
+		$query = "INSERT INTO products (id, name, description, quant, imgName, price, salePrice) 
+			VALUES (null,
+				:name,
+				:desc,
+				:quant,
+				:imgName,
+				:price,
+				:salePrice
+			)";
+		
+		$name = $attrs['name'];
+		$desc = $attrs['description'];
+		$quant = $attrs['quant'];
+		$img = $attrs['imgName'];
+		$price = $attrs['price'];
+		$sale = $attrs['salePrice'];
+		
+		$params = array( 'name' => strVal($name),
+			'desc' => strVal($desc),
+			'quant' => intVal($quant),
+			'imgName' => strVal($img),
+			'price' => floatVal($price),
+			'salePrice' => floatVal($sale));
+		
+		return $this -> query( $query, $params );
+	}
+	
+	/*
 		Checks to see if an update can be made while still keeping the required 3-5 sale count
 		$id		- the id of the item that will be updated
 		$onSale	- whether or not the item will be on sale after the update
+		$attrs	- the list of attributes for the item (used when item is being inserted into
+					the DB, so attributes cannot be pulled from the DB)
 		returns	- whether or not the update can occur given the number of items on sale after
 					the update
 	*/
-	function checkSaleCount( $id, $onSale )
+	function checkSaleCount( $id, $onSale, $attrs = null )
 	{
 		//query for items on sale
 		$data = $this -> getSales('!=');
 		
 		if( $id < 0 )
 		{
-			return 0;
+			$cur = $attrs;
+		}
+		else
+		{
+			$cur = $this -> getItem( $id )[0];
 		}
 		
-		$cur = $this -> getItem( $id );
-		
-		if( !$cur || !array_key_exists('salePrice', $cur[0]) )
+		if( !$cur || !array_key_exists('salePrice', $cur) )
 		{
 			return 0;
 		}
@@ -190,7 +244,7 @@ class DB
 			//if 3 items on sale
 			case 3:
 				//if item is on sale and will be taken off, return 0
-				if( $cur[0]['salePrice'] != 0 && !$onSale )
+				if( $cur['salePrice'] != 0 && !$onSale )
 				{
 					return 0;
 				}
@@ -201,7 +255,7 @@ class DB
 			//if 5 items on sale	
 			case 5:
 				//if item is not on sale and will be put on sale, return 0
-				if( $cur[0]['salePrice'] == 0 && $onSale )
+				if( $cur['salePrice'] == 0 && $onSale )
 				{
 					return 0;
 				}
@@ -243,6 +297,7 @@ class DB
 			$query = 'UPDATE products SET quant = :newQuant WHERE id = :id';
 			$params = array( 'id' => $id, 'newQuant' => $newQuant );
 			
+			$this -> connection -> beginTransaction();
 			$numRows = $this -> query( $query, $params );
 		
 			//first query worked
@@ -263,13 +318,18 @@ class DB
 				$result = $this -> query( $query, $params );
 			
 				if( $result == 1 )
+				{
+					$this -> connection -> commit();
 					return $newQuant;
+				}
 				
 				//second query was unsuccessful
+				$this -> connection -> rollBack();
 				return -1;
 			}
 			
 			//first query didn't work
+			$this -> connection -> rollBack();
 			return -1;
 		}
 		
@@ -308,6 +368,9 @@ class DB
 	{
 		$query = "SELECT * FROM cart JOIN products ON cart.id = products.id";
 		$result = $this -> query($query);
+
+		//start transaction
+		$this -> connection -> beginTransaction();
 		
 		//replace items that were in the cart
 		foreach( $result as $row )
@@ -316,12 +379,27 @@ class DB
 			$params = array('quant' => $row['quantCart'] + $row['quant'],
 				'id' => $row['id']);
 				
-			$this -> query($query, $params);
+			$numRows = $this -> query($query, $params);
+
+			//transaction handling
+			if( !$numRows )
+			{
+				$this -> connection -> rollBack();
+				return false;
+			}
 		}
 	
 		$query = "DELETE FROM cart";
 		$result = $this -> query($query);
 		
+		//transaction handling
+		if( !$result )
+		{
+			$this -> connection -> rollBack();
+			return false;
+		}
+
+		$this -> connection -> commit();
 		return $result != 0;
 	}
 
@@ -353,8 +431,9 @@ class DB
 		$params	- the parameters to be bound into the query. They should
 					be named parameters and the key should reflect the proper names.
 					Default is empty array.
-		returns - the result of a fetchAll call on the statement;
-					In other words, an array of the results
+		returns - the result of a fetchAll call on the statement for SELECT queries;
+					In other words, an array of the results. For other queries, rowCount
+					is returned, meaning the number of rows affected by the query
 	*/
 	private function query( $query, $params = array() )
 	{
@@ -379,7 +458,7 @@ class DB
 		}
 		catch( PDOException $e )
 		{
-			echo "Query Error:".$e -> getMessage();
+			echo "Query Error: ".$e -> getMessage();
 			die();
 		}
 	}

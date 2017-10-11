@@ -12,7 +12,7 @@
 	
 	if( canGet('msg') )
 	{
-		echo "<script>$.notify('".canGet('msg')."', {position: 'top center', className: 'success'});</script>";
+		echo "<script>$.notify(".canGet('msg').", {position: 'top center', className: 'success'});</script>";
 	}
 	
 	echo footer();
