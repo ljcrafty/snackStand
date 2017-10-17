@@ -28,12 +28,22 @@
 	*/
 	function nav()
 	{
+		if(isset($_SESSION) || checkSession())
+		{
+			$logout = "<div>Hello {$_SESSION['user']}! <a href='javascript: logout()'>Logout</a></div>";
+		}
+		else
+		{
+			$logout = "";
+		}
+
 		return "<header>\n
 		<h1>Lauren's Snack Stand</h1>\n
+		$logout\n
 		<nav>
 			<a href='index.php'>Home</a>\n
 			<a href='cart.php'>Cart</a>\n
-			<a href='login.php'>Admin</a>
+			<a href='admin.php'>Admin</a>
 		</nav>
 		</header>\n
 		<div id='alert'></div>";
@@ -48,7 +58,7 @@
 	function getLogin( $msg )
 	{
 		return "<main>
-			<form action='login.php' method='POST' id='login'>\n
+			<form action='login.php?loc={$_GET['loc']}' method='POST' id='login'>\n
 				<div><span>Username: </span><input type='text' name='username' id='user'/></div>\n
 				<div><span>Password: </span><input type='password' name='password' /></div>\n
 				<input type='submit' value='Login'/>
@@ -56,8 +66,7 @@
 		</main>\n
 		<script>
 			document.getElementById('user').focus();
-			$.notify('$msg', {position: 'top center', className: 'error'});
-		</script>";
+		</script>".notify($msg);
 	}
 	
 	/*
@@ -159,7 +168,7 @@
 			$salePr = 0;
 			$price = 0;
 			$quantity = 0;
-			$imgName = '';
+			$imgName = "<label for='imgName'>Image Name:</label><input name='imgName' />";
 		}
 		else
 		{
@@ -168,6 +177,8 @@
 			//bad id
 			if( empty($item) )
 			{
+				//<input name='imgName' type='file' />
+
 				$id = -1;
 				$isSale = false;
 				$name = '';
@@ -175,10 +186,14 @@
 				$salePr = 0;
 				$price = 0;
 				$quantity = 0;
-				$imgName = '';
+				$imgName = "<label for='imgName'>Image Name:</label><input name='imgName' />";
 			}
 			else
 			{
+				/*$imgName = "<label for='imgName'>Choose a file to upload:</label>
+					<div>{$data['imgName']} <a href='js: selectImg()'>Upload New</a></div>
+					<input name='imgName' value='{$data['imgName']}' style='display: none;'/>";
+				*/
 				$data = $item[0];
 				
 				$name = $data['name'];
@@ -186,7 +201,8 @@
 				$salePr = $data['salePrice'];
 				$price = $data['price'];
 				$quantity = $data['quant'];
-				$imgName = $data['imgName'];
+				$imgName = "<label for='imgName'>Image Name:</label>
+					<input name='imgName' value='{$data['imgName']}'/>";
 				$isSale = $data['salePrice'] != 0;
 			}
 		}
@@ -200,7 +216,6 @@
 			<div><span>Name: </span><input name='name' value='$name'/></div>\n
 			<div><span>Description: </span><textarea name='description'>$desc</textarea></div>\n
 			<div><span>Quantity: </span><input name='quant' value='$quantity'/></div>\n
-			<div><label for='imgName'>Choose a file to upload:</label><input name='imgName' type='file' /></div>\n
 			<div><span>Price: </span><input name='price' value='$price'/></div>\n
 			<div>
 				<label for='isSale'>On Sale: </label><input onchange='showSale()' name='isSale' type='checkbox' $checked/>
@@ -208,6 +223,7 @@
 			<div id='salePriceDiv' $saleInput>
 				<span>Sale Price: </span><input type='text' name='salePrice' value='$salePr'/>
 			</div>\n
+			<div>$imgName</div>\n
 			<input type='submit' value='Save' />\n
 			<input type='button' onclick='window.location=\"admin.php\"' value='Cancel'/>\n
 		</form>";
@@ -224,11 +240,10 @@
 	*/
 	function getEditEndPage( $id, $msg )
 	{
-		$str = "<main>".getEditForm($id)."
-			<script>
-				$.notify('$msg', {position: 'top center', className: 'error'});
-			</script>	
-		</main>";
+		$str = "<main>".getEditForm($id).notify($msg)."</main>
+		<script>
+			document.getElementsByTagName('input')[1].focus();
+		</script>";
 	
 		$str .= footer();
 		 
@@ -243,6 +258,18 @@
 	function footer()
 	{
 		return "<footer>By Lauren Johnston</footer>\n</body></html>";
+	}
+
+	/*
+		Creates an error notification on the client screen
+		$msg	- the message to display in the error
+		returns	- the HTML to create the error message
+	*/
+	function notify($msg)
+	{
+		return "<script>
+			$.notify('$msg', {position: 'top center', className: 'error'});
+		</script>";
 	}
 	
 	/*
@@ -280,24 +307,80 @@
 			return 0;
 		}
 		
-		$id = $attrs['id'];
-		$name = $attrs['name'];
-		$desc = $attrs['description'];
-		$quant = $attrs['quant'];
-		$img = $attrs['imgName'];
-		$price = $attrs['price'];
-		$sale = $attrs['salePrice'];
+		$id 	= $attrs['id'];
+		$name 	= $attrs['name'];
+		$desc 	= $attrs['description'];
+		$quant 	= $attrs['quant'];
+		$img 	= $attrs['imgName'];
+		$price 	= $attrs['price'];
+		$sale 	= $attrs['salePrice'];
 		
 		//checking for correct values
-		if( !is_int(intVal($id)) || !is_string($name) || strlen($name) > 30 || 
-			!is_string($desc) || !is_int(intVal($quant)) || $quant < 0 ||
-			!is_string($img) || !is_float(floatval($price)) || $price <= 0 || 
-			!is_float(floatVal($sale)) || $sale = 0 )
+		if( ($id != -1 && intVal($id) == 0 && $id != 0) || ($id != -1 && intVal($id) == 1 && $id != 1) || 
+			!is_string($name) || strlen($name) > 30 || !is_string($desc) || 
+			intVal($quant) < 0 || (intval($quant) == 0 && $quant != 0) || !is_string($img) || 
+			strlen($img) > 70 || floatVal($price) <= 0 || floatVal($sale) < 0 )
+		{
+			return 0;
+		}
+
+		//quant, sale price, and price
+		if( (intVal($quant) == 0 && $quant != 0) ||
+			(floatVal($sale) == 0 && $sale != 0) ||
+			(floatVal($price) == 0 && $price != 0) )
 		{
 			return 0;
 		}
 		
 		return 1;
+	}
+
+	/*
+		Sanitize an input value by stripping tags and escaping SQL strings
+		$param	- the input to sanitize
+		returns	- the sanitized value
+	*/
+	function sanitize($param)
+	{
+		return strip_tags( $param );
+	}
+
+	/*
+		Checks an id (product or user) to make sure that it's valid to query with
+		$id		- the id to check
+		returns - whether or not the id is valid
+	*/
+	function checkId($id)
+	{
+		if( $id < 0 )
+		{
+			return 0;
+		}
+
+		if( (intVal($id) == 0 && $id != 0) || (intVal($id) == 1 && $id != 1) )
+		{
+			return 0;
+		}
+
+		return 1;
+	}
+
+	/*
+		Checks if a session is in session
+		returns	- if a session is currently available and if it has a user key 
+					(meaning someone logged in)
+	*/
+	function checkSession()
+	{
+		session_name('snacks');
+		session_start();
+
+		if( isset($_SESSION) && !empty($_SESSION['user']) && !empty($_SESSION['uid']) )
+		{
+			return 1;
+		}
+		
+		return 0;
 	}
 	
 	/*

@@ -38,6 +38,24 @@ header h1
 	margin-left: 20px;
 }
 
+header > div
+{
+	position: absolute;
+	top: 20px;
+	right: 20px;
+}
+
+header > div a
+{
+	color: var(--grey);
+	font-size: 1em;
+}
+
+header > div a:hover
+{
+	color: white;
+}
+
 nav
 {
 	background-color: var(--dark-green);
@@ -246,6 +264,7 @@ form div
 table
 {
 	border-collapse: collapse;
+	width: 100%;
 }
 
 tr:hover
@@ -258,6 +277,12 @@ th, td
 	border: 1px solid var(--grey);
 	padding: 5px;
 	min-width: 40px;
+}
+
+tr td:last-child
+{
+	max-width: 200px;
+	word-wrap: break-word;
 }
 
 th
@@ -291,23 +316,30 @@ th
 #edit,
 h3
 {
-	width: 340px;
+	width: 500px;
 	margin: 50px auto;
 }
 
 #edit span,
 #edit label
 {
-	width: 130px;
+	width: 200px;
 	display: inline-block;
 	text-align: left;
 	vertical-align: top;
 } 
 
 #edit input,
-#edit textarea
+#edit textarea,
+#edit div div
 {
-	width: 200px;
+	width: 250px;
+	display: inline-block;
+}
+
+#edit div div
+{
+	text-align: left;
 }
 
 #edit textarea
@@ -315,6 +347,7 @@ h3
 	height: 100px;
 }
 
+/* edit page submit buttons */
 #edit > input
 {
 	width: 49%;

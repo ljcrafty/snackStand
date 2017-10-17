@@ -14,6 +14,8 @@ function addToCart( id )
 			var rows = this.responseText;
 			var text = '';
 			
+			console.log(rows);
+			
 			if(rows < 0)
 			{
 				$.notify("A problem occurred.\n" + 
@@ -71,6 +73,10 @@ function empty()
 	http.send();
 }
 
+/*
+	Shows or hides the inputs for a sale price when the sale price
+		check box is checked or unchecked
+*/
 function showSale()
 {
 	var saleDiv = document.getElementById("salePriceDiv");
@@ -111,4 +117,38 @@ function nextPage( curPage, direction = 1 )
 	}
 	
 	window.location = "index.php?page=" + (parseInt(curPage) + 1 * direction) + "#products";
+}
+
+/*
+	Allows the user to select a new image if they want to change
+		the image for an item
+*/
+function selectImg()
+{
+	//var imgDiv = document.getElementsByName
+}
+
+/*
+	Logs the user out of their account
+*/
+function logout()
+{
+	var http = new XMLHttpRequest();
+	http.onreadystatechange = function()
+	{
+		if( this.readyState == 4 && this.status == 200 )
+		{
+			if( this.responseText )
+			{
+				window.location = "index.php";
+			}
+			else
+			{
+				$.notify("There was a problem logging out.", {position: "top center", className: "error"});
+			}
+		}
+	}
+	
+	http.open( "GET", "logout.php", true );
+	http.send();
 }

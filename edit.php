@@ -3,6 +3,10 @@
 	require_once "LIB_project1.php";
 	
 	//check for session to see if they need to log in
+	if( !checkSession() )
+	{
+		header('Location: login.php?loc=edit');
+	}
 
 	echo getHeader("Edit Item");
 	echo nav();
@@ -13,7 +17,7 @@
 		//problem with inputs in name or type
 		if( !validateAttrs($_POST) )
 		{
-			echo getEditEndPage(-1, 'There was a problem saving.\nMake sure all inputs are valid');
+			header('Location: admin.php?msg="Error: Invalid inputs"');
 			die();
 		}
 		

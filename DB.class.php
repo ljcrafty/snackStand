@@ -61,7 +61,7 @@ class DB
 	*/
 	function getProdTable( $page = 0 )
 	{
-		if( !is_int(intVal($page)) || $page < 0 )
+		if( $page < 0 )
 		{
 			return "";
 		}
@@ -95,13 +95,14 @@ class DB
 	*/
 	function getItem( $id )
 	{
-		if( !is_int(intVal($id)) || $id < 0 )
+		if( !checkId($id) )
 		{
 			return array();
 		}
 
+		$newId = intVal($id);
 		$query = "SELECT * FROM products WHERE id = :id";
-		$params = array('id' => intVal($id));
+		$params = array('id' => intVal($newId));
 		
 		return $this -> query($query, $params);
 	}
@@ -137,21 +138,21 @@ class DB
 			WHERE id = :id";
 		
 		//setup for params	
-		$id = $attrs['id'];
-		$name = $attrs['name'];
-		$desc = $attrs['description'];
-		$quant = $attrs['quant'];
-		$img = $attrs['imgName'];
-		$price = $attrs['price'];
-		$sale = $attrs['salePrice'];
+		$id 	= sanitize($attrs['id']);
+		$name 	= sanitize($attrs['name']);
+		$desc 	= sanitize($attrs['description']);
+		$quant 	= sanitize($attrs['quant']);
+		$img 	= sanitize($attrs['imgName']);
+		$price 	= sanitize($attrs['price']);
+		$sale 	= sanitize($attrs['salePrice']);
 		
-		$params = array('name' => $name,
-			'desc' => $desc ,
-			'quant' => $quant ,
-			'img' => $img ,
-			'price' => $price ,
-			'sale' => $sale ,
-			'id' => $id);
+		$params = array('name' => strVal($name),
+			'desc' 	=> strVal($desc) ,
+			'quant' => intVal($quant) ,
+			'img' 	=> strVal($img) ,
+			'price' => floatVal($price) ,
+			'sale' 	=> floatVal($sale) ,
+			'id' 	=> intval($id));
 		
 		$result = $this -> query( $query, $params );
 		return $result;
@@ -190,18 +191,18 @@ class DB
 				:salePrice
 			)";
 		
-		$name = $attrs['name'];
-		$desc = $attrs['description'];
-		$quant = $attrs['quant'];
-		$img = $attrs['imgName'];
-		$price = $attrs['price'];
-		$sale = $attrs['salePrice'];
+		$name 	= sanitize($attrs['name']);
+		$desc 	= sanitize($attrs['description']);
+		$quant 	= sanitize($attrs['quant']);
+		$img 	= sanitize($attrs['imgName']);
+		$price 	= sanitize($attrs['price']);
+		$sale 	= sanitize($attrs['salePrice']);
 		
 		$params = array( 'name' => strVal($name),
-			'desc' => strVal($desc),
-			'quant' => intVal($quant),
-			'imgName' => strVal($img),
-			'price' => floatVal($price),
+			'desc' 		=> strVal($desc),
+			'quant' 	=> intVal($quant),
+			'imgName' 	=> strVal($img),
+			'price' 	=> floatVal($price),
 			'salePrice' => floatVal($sale));
 		
 		return $this -> query( $query, $params );
@@ -212,7 +213,7 @@ class DB
 		$id		- the id of the item that will be updated
 		$onSale	- whether or not the item will be on sale after the update
 		$attrs	- the list of attributes for the item (used when item is being inserted into
-					the DB, so attributes cannot be pulled from the DB)
+					the DB, because attributes cannot be pulled from the DB)
 		returns	- whether or not the update can occur given the number of items on sale after
 					the update
 	*/
@@ -221,13 +222,18 @@ class DB
 		//query for items on sale
 		$data = $this -> getSales('!=');
 		
-		if( $id < 0 )
+		$newId = intval($id);
+
+		if( $newId < 0 )
 		{
+			if( $attrs == null )
+				return 0;
+
 			$cur = $attrs;
 		}
 		else
 		{
-			$cur = $this -> getItem( $id )[0];
+			$cur = $this -> getItem( $newId )[0];
 		}
 		
 		if( !$cur || !array_key_exists('salePrice', $cur) )
@@ -272,14 +278,17 @@ class DB
 		returns	- the number of items left that can be added to the cart.
 					-1 is returned if there was an error
 	*/
-	function incrementCart( $id )
+	function incrementCart( $id, $user )
 	{
-		if( !is_int(intVal($id)) || $id < 0 )
+		if( !checkId($id) || !checkId($user) )
 		{
 			return -1;
 		}
 
-		$params = array('id' => intVal($id));
+		$newId = intVal($id);
+		$userId = intVal($user);
+
+		$params = array('id' => intVal($newId));
 		$query = "SELECT * FROM `products` LEFT JOIN `cart` ON products.id = cart.id WHERE products.id = :id";
 		$result = $this -> query( $query, $params );
 		
@@ -295,7 +304,7 @@ class DB
 			//remove from products table first
 			$newQuant = $result[0]['quant'] - 1;
 			$query = 'UPDATE products SET quant = :newQuant WHERE id = :id';
-			$params = array( 'id' => $id, 'newQuant' => $newQuant );
+			$params = array( 'id' => $newId, 'newQuant' => $newQuant );
 			
 			$this -> connection -> beginTransaction();
 			$numRows = $this -> query( $query, $params );
@@ -303,18 +312,39 @@ class DB
 			//first query worked
 			if( $numRows == 1 )
 			{
-				//product is not in cart already
-				if( $result[0]['id'] == null )
+				//if there is only one row and it has no user id
+				if( count($result) == 1 && $result[0]['user'] == null )
 				{
-					$params = array('id' => $id);
-					$query = 'INSERT INTO cart VALUES( :id, 1 )';
+					//no one has this item in their cart
+					$params = array('id' => $newId, 'user' => $userId);
+					$query = 'INSERT INTO cart VALUES( :id, 1, :user )';
 				}
-				else
+				else //someone has this item in their cart
 				{
-					$newCart = $result[0]['quantCart'] + 1;
-					$query = 'UPDATE cart SET quantCart = :newCart WHERE id = :id';
-					$params = array( 'id' => $id, 'newCart' => $newCart );
-				}	
+					$exists = false;
+					
+					//look through rows
+					foreach( $result as $row )
+					{
+						if( $row['user'] == $userId )
+						{
+							$exists = true;					
+						}
+					}
+					
+					if( !$exists )//item is already in user's cart
+					{
+						$params = array('id' => $newId, 'user' => $userId);
+						$query = 'INSERT INTO cart VALUES( :id, 1, :user )';
+					}
+					else//item is not already is user's cart
+					{
+						$newCart = $result[0]['quantCart'] + 1;
+						$query = 'UPDATE cart SET quantCart = :newCart WHERE id = :id && user = :user';
+						$params = array( 'id' => $newId, 'newCart' => $newCart , 'user' => $userId );
+					}
+				}
+					
 				$result = $this -> query( $query, $params );
 			
 				if( $result == 1 )
@@ -339,16 +369,25 @@ class DB
 	
 	/*
 		Gets a table with all of the items in the cart
+		$user	- the user id of the user to return the cart of
 		returns	- HTML populated with the item details for items in the cart
 					or a header saying there are no items in the cart
 	*/
-	function getCart()
+	function getCart( $user )
 	{
+		if( !checkId($user) )
+		{
+			return '';
+		}
+		
+		$userId = intVal($user);
+	
 		$query = "SELECT cart.id, products.name, products.description, 
 			products.price, products.salePrice, cart.quantCart
 			FROM `cart` LEFT JOIN `products` 
-			ON products.id = cart.id";
-		$data = $this -> query($query);
+			ON products.id = cart.id WHERE cart.user = :user";
+		$params = array('user' => $userId);
+		$data = $this -> query($query, $params);
 		
 		if( count($data) > 0 )
 		{
@@ -362,12 +401,21 @@ class DB
 	
 	/*
 		Clears the cart table of all of its rows
+		$user	- the id of the user to clear the cart for
 		returns	- whether or not the clear was successful
 	*/
-	function clearCart()
+	function clearCart($user)
 	{
-		$query = "SELECT * FROM cart JOIN products ON cart.id = products.id";
-		$result = $this -> query($query);
+		if( !checkId($user) )
+		{
+			return false;
+		}
+		
+		$userId = intVal($user);
+	
+		$query = "SELECT * FROM cart JOIN products ON cart.id = products.id WHERE user = :user";
+		$params = array('user' => $userId);
+		$result = $this -> query($query, $params);
 
 		//start transaction
 		$this -> connection -> beginTransaction();
@@ -389,8 +437,9 @@ class DB
 			}
 		}
 	
-		$query = "DELETE FROM cart";
-		$result = $this -> query($query);
+		$query = "DELETE FROM cart WHERE user = :user";
+		$params = array('user' => $userId);
+		$result = $this -> query($query, $params);
 		
 		//transaction handling
 		if( !$result )
@@ -411,13 +460,15 @@ class DB
 	*/
 	function getUser( $username )
 	{
-		if( !is_string(strVal($username)) || strlen($username) > 25 )
+		if( strlen($username) > 25 )
 		{
 			return array();
 		}
 
+		$user = sanitize( strVal($username) );
+
 		$query = "SELECT * FROM users WHERE username = :user";
-		$params = array('user' => strVal($username));
+		$params = array('user' => strVal($user));
 
 		$result = $this -> query($query, $params);
 
