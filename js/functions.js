@@ -11,10 +11,18 @@ function addToCart( id )
 	{
 		if( this.readyState == 4 && this.status == 200 )
 		{
-			var rows = this.responseText;
+			var resp = this.responseText;
+			var rows = resp.substr(resp.lastIndexOf("\n"));
 			var text = '';
 			
-			console.log(rows);
+			console.log(resp);
+			
+			//redirect
+			if( resp.indexOf("<html>") != -1 )
+			{
+				window.location = 'login.php?loc=cartAdd';
+				return;
+			}
 			
 			if(rows < 0)
 			{
@@ -28,7 +36,7 @@ function addToCart( id )
 				{
 					text = "Only " + rows + " left!";
 				}
-				else
+				else if( rows == 0 )
 				{
 					text = "None left!";
 				}
@@ -117,15 +125,6 @@ function nextPage( curPage, direction = 1 )
 	}
 	
 	window.location = "index.php?page=" + (parseInt(curPage) + 1 * direction) + "#products";
-}
-
-/*
-	Allows the user to select a new image if they want to change
-		the image for an item
-*/
-function selectImg()
-{
-	//var imgDiv = document.getElementsByName
 }
 
 /*

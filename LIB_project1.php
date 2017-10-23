@@ -110,16 +110,16 @@
 		
 		foreach($sale as $item)
 		{
-			$salePr = number_format($item['salePrice'], 2, '.', '');
-			$price = number_format($item['price'], 2, '.', '');
+			$salePr = number_format($item -> salePrice(), 2, '.', '');
+			$price = number_format($item -> price(), 2, '.', '');
 			$str .= "\n<tr>
-				<td><a href='edit.php?id={$item['id']}'>Edit</a></td>
-				<td>{$item['name']}</td>
-				<td>{$item['description']}</td>
+				<td><a href='edit.php?id={$item -> id()}'>Edit</a></td>
+				<td>{$item -> name()}</td>
+				<td>{$item -> descr()}</td>
 				<td>\${$price}</td>
 				<td>\${$salePr}</td>
-				<td>{$item['quant']}</td>
-				<td>{$item['imgName']}</td>
+				<td>{$item -> quant()}</td>
+				<td>{$item -> imgName()}</td>
 			</tr>";
 		}
 		
@@ -130,14 +130,14 @@
 		
 		foreach($catalogue as $item)
 		{
-			$price = number_format($item['price'], 2, '.', '');
+			$price = number_format($item -> price(), 2, '.', '');
 			$str .= "\n<tr>
-				<td><a href='edit.php?id={$item['id']}'>Edit</a></td>
-				<td>{$item['name']}</td>
-				<td>{$item['description']}</td>
+				<td><a href='edit.php?id={$item -> id()}'>Edit</a></td>
+				<td>{$item -> name()}</td>
+				<td>{$item -> descr()}</td>
 				<td>\${$price}</td>
-				<td>{$item['quant']}</td>
-				<td>{$item['imgName']}</td>
+				<td>{$item -> quant()}</td>
+				<td>{$item -> imgName()}</td>
 			</tr>";
 		}
 		
@@ -168,7 +168,7 @@
 			$salePr = 0;
 			$price = 0;
 			$quantity = 0;
-			$imgName = "<label for='imgName'>Image Name:</label><input name='imgName' />";
+			$imgName = "<span>Image Name:</span><input name='imgName' />";
 		}
 		else
 		{
@@ -186,7 +186,7 @@
 				$salePr = 0;
 				$price = 0;
 				$quantity = 0;
-				$imgName = "<label for='imgName'>Image Name:</label><input name='imgName' />";
+				$imgName = "<span>Image Name:</span><input name='imgName' />";
 			}
 			else
 			{
@@ -196,14 +196,13 @@
 				*/
 				$data = $item[0];
 				
-				$name = $data['name'];
-				$desc = $data['description'];
-				$salePr = $data['salePrice'];
-				$price = $data['price'];
-				$quantity = $data['quant'];
-				$imgName = "<label for='imgName'>Image Name:</label>
-					<input name='imgName' value='{$data['imgName']}'/>";
-				$isSale = $data['salePrice'] != 0;
+				$name = $data -> name();
+				$desc = $data -> descr();
+				$salePr = $data -> salePrice();
+				$price = $data -> price();
+				$quantity = $data -> quant();
+				$imgName = "<span>Image Name:</span><input name='imgName' value='{$data -> imgName()}'/>";
+				$isSale = $data -> salePrice() != 0;
 			}
 		}
 		$checked = ($isSale ? "checked" : "");
@@ -218,7 +217,7 @@
 			<div><span>Quantity: </span><input name='quant' value='$quantity'/></div>\n
 			<div><span>Price: </span><input name='price' value='$price'/></div>\n
 			<div>
-				<label for='isSale'>On Sale: </label><input onchange='showSale()' name='isSale' type='checkbox' $checked/>
+				<label for='isSale'>On Sale: </label><input type='checkbox' id='isSale' onchange='showSale()' name='isSale' $checked/>
 			</div>\n
 			<div id='salePriceDiv' $saleInput>
 				<span>Sale Price: </span><input type='text' name='salePrice' value='$salePr'/>
@@ -432,13 +431,12 @@
 	
 	/*
 		Creates a table from product data
-		$data	- the data to create the table from
+		$data	- the data to create the table from (array of Items)
 		returns - a string holding the HTML for the product list
 	*/
 	function prodTable( $data )
 	{
-		$isCart = !array_key_exists('imgName', $data[0]);
-		$isProd = $data[0]['salePrice'] == 0;
+		$isCart = $data[0] -> imgName() == '';
 		$str = "";
 		$total = 0.0;
 		$locTotal = '';
@@ -446,43 +444,43 @@
 		//format data into columns
 		foreach( $data as $sale )
 		{
-			$isProd = $sale['salePrice'] == 0;
+			$isProd = $sale -> salePrice() == 0;
 			$star = ($isProd ? "" : "<span class='star'>&#9733;</span>");
-			$img = ($isCart ? "" :
-				"<div class='prodImg'><img src='img/{$sale['imgName']}'/></div>\n" );
+			$img = ($isCart ? "{$data[0] -> imgName()}" :
+				"<div class='prodImg'><img alt=\"{$sale -> name()}\" src='img/{$sale -> imgName()}'/></div>\n" );
 
-			$saleNum = number_format( floatval($sale['salePrice']), 2, '.', '' );
+			$saleNum = number_format( floatval($sale -> salePrice()), 2, '.', '' );
 			$salePr = ($isProd  ? "" : "<span class='salePr'>\$$saleNum</span>\n" );
 			
-			$prNum = number_format( floatval($sale['price']), 2, '.', '' );
+			$prNum = number_format( floatval($sale -> price()), 2, '.', '' );
 			$pr = ( $isProd ? "<span class='price'>\$$prNum</span>\n" : 
 				"<span class='priceStrike'>\$$prNum</span>\n" );
 
 			//changes for the cart
 			if( $isCart )
 			{
-				$price = ($isProd ? $sale['price'] : $sale['salePrice']);
+				$price = ($isProd ? $sale -> price() : $sale -> salePrice());
 				
 				//keep track of totals
-				$locTotal = floatVal( $price ) * intVal( $sale['quantCart'] );
+				$locTotal = floatVal( $price ) * intVal( $sale -> quantCart() );
 				$total += $locTotal;
 				
 				$locTotal = "<span class='locTotal'>\$".number_format( $locTotal, 2, '.', '' )."</span>";
 			
 				//number in the cart
-				$remaining = $sale['quantCart']." in the cart";
+				$remaining = $sale -> quantCart()." in the cart";
 			}
 			else
-				$remaining = ($sale['quant'] == 0 ? "None left!" : "Only {$sale['quant']} left!");
+				$remaining = ($sale -> quant() == 0 ? "None left!" : "Only {$sale -> quant()} left!");
 				
 			$cart = ($isCart ? "" : 
-				"<button class='cart' onclick='addToCart({$sale['id']})'>Add to Cart</button>");
+				"<button class='cart' onclick='addToCart({$sale -> id()})'>Add to Cart</button>");
 	
-			$str .= "<div class='prod' id='prod{$sale['id']}'>
+			$str .= "<div class='prod' id='prod{$sale -> id()}'>
 				$img
 				<div class='prodDesc'>\n
-					<h2>$star {$sale['name']}</h2>\n
-					<p>{$sale['description']}</p>\n
+					<h2>$star {$sale -> name()}</h2>\n
+					<p>{$sale -> descr()}</p>\n
 					$pr
 					$salePr
 					<p>$remaining</p>\n
@@ -492,7 +490,7 @@
 			</div>\n";
 		}
 		$totStr = ( $total != 0.0 ? "<span class='right'>\$".number_format( $total, 2, '.', '' )."</span>" : "" );
-		$str .= $totStr."</div>";
+		$str .= $totStr;
 
 		return $str;
 	}

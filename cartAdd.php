@@ -1,11 +1,15 @@
 <?php
 	require_once "LIB_project1.php";
 	
+	echo checkSession();
+	
 	if( !checkSession() )
 	{
-		header('Location: login.php?loc=cartAdd');
+		header("Location: login.php?loc=cartAdd");
+		die();
 	}
-
+	
+	
 	//if an id was passed
 	if( canGet('id') == 0 || canGet('id') )
 	{

@@ -1,5 +1,6 @@
 <?php
 require_once "LIB_project1.php";
+require_once "Item.class.php";
 
 class DB
 {
@@ -37,7 +38,7 @@ class DB
 		}
 		
 		$query = "SELECT * FROM products WHERE salePrice $equals 0";
-		return $this -> query($query);
+		return $this -> query($query, array(), "Item");
 	}
 	
 	/*
@@ -47,7 +48,7 @@ class DB
 	function getSaleTable()
 	{
 		$data = $this -> getSales( '!=' );
-		$str = "<div id='sales'>\n".prodTableHeading('sales');
+		$str = "<div id='sales'>\n".prodTableHeading('sales')."</div>";
 		$str .= prodTable($data);
 
 		return $str;
@@ -83,7 +84,7 @@ class DB
 		$data = array_slice( $data, $page * 5, 5 );
 		$str .= prodTable($data);
 		
-		$str .= getPrevButtons($page, $len);
+		$str .= getPrevButtons($page, $len)."</div>";
 
 		return $str;
 	}
@@ -104,7 +105,7 @@ class DB
 		$query = "SELECT * FROM products WHERE id = :id";
 		$params = array('id' => intVal($newId));
 		
-		return $this -> query($query, $params);
+		return $this -> query($query, $params, "Item");
 	}
 	
 	/*
@@ -114,7 +115,7 @@ class DB
 						name: 			varchar(30)
 						description: 	mediumtext
 						quant:			int
-						imgName:		varchar(20)
+						imgName:		varchar(70)
 						price:			float
 						salePrice:		float
 						id:				tinyint(5)
@@ -165,7 +166,7 @@ class DB
 						name: 			varchar(30)
 						description: 	mediumtext
 						quant:			int
-						imgName:		varchar(20)
+						imgName:		varchar(70)
 						price:			float
 						salePrice:		float
 					An id attribute will be ignored and the item will be added
@@ -229,14 +230,15 @@ class DB
 			if( $attrs == null )
 				return 0;
 
-			$cur = $attrs;
+			$cur = new Item();
+			$cur -> __constructorAttrs($attrs);
 		}
 		else
 		{
 			$cur = $this -> getItem( $newId )[0];
 		}
 		
-		if( !$cur || !array_key_exists('salePrice', $cur) )
+		if( !$cur || $cur -> salePrice() != null )
 		{
 			return 0;
 		}
@@ -250,7 +252,7 @@ class DB
 			//if 3 items on sale
 			case 3:
 				//if item is on sale and will be taken off, return 0
-				if( $cur['salePrice'] != 0 && !$onSale )
+				if( $cur -> salePrice() != 0 && !$onSale )
 				{
 					return 0;
 				}
@@ -261,7 +263,7 @@ class DB
 			//if 5 items on sale	
 			case 5:
 				//if item is not on sale and will be put on sale, return 0
-				if( $cur['salePrice'] == 0 && $onSale )
+				if( $cur -> salePrice() == 0 && $onSale )
 				{
 					return 0;
 				}
@@ -321,25 +323,28 @@ class DB
 				}
 				else //someone has this item in their cart
 				{
-					$exists = false;
+					$exists = 0;
 					
 					//look through rows
-					foreach( $result as $row )
+					for( $i = 0; $i < count($result); $i++ )
 					{
+						$row = $result[$i];
+						
 						if( $row['user'] == $userId )
 						{
-							$exists = true;					
+							$exists = $i;
+							break;					
 						}
 					}
 					
-					if( !$exists )//item is already in user's cart
+					if( $exists == 0 )//item is not already in user's cart
 					{
 						$params = array('id' => $newId, 'user' => $userId);
 						$query = 'INSERT INTO cart VALUES( :id, 1, :user )';
 					}
-					else//item is not already is user's cart
+					else//item is already is user's cart
 					{
-						$newCart = $result[0]['quantCart'] + 1;
+						$newCart = $result[$exists]['quantCart'] + 1;
 						$query = 'UPDATE cart SET quantCart = :newCart WHERE id = :id && user = :user';
 						$params = array( 'id' => $newId, 'newCart' => $newCart , 'user' => $userId );
 					}
@@ -387,7 +392,7 @@ class DB
 			FROM `cart` LEFT JOIN `products` 
 			ON products.id = cart.id WHERE cart.user = :user";
 		$params = array('user' => $userId);
-		$data = $this -> query($query, $params);
+		$data = $this -> query($query, $params, "Item");
 		
 		if( count($data) > 0 )
 		{
@@ -486,7 +491,7 @@ class DB
 					In other words, an array of the results. For other queries, rowCount
 					is returned, meaning the number of rows affected by the query
 	*/
-	private function query( $query, $params = array() )
+	private function query( $query, $params = array(), $className = "" )
 	{
 		try
 		{
@@ -497,9 +502,21 @@ class DB
 			$first = explode( ' ', trim($query) )[0];
 
 			//fetch all for selection commands
-			if( strcasecmp($first, 'SELECT') == 0 )
+			if( strcasecmp($first, 'SELECT') == 0 && $className == "" )
 			{
 				return $stmt -> fetchAll();
+			}
+			elseif( strcasecmp($first, 'SELECT') == 0 && $className != "" )//fetch objs
+			{
+				$stmt -> setFetchMode( PDO::FETCH_CLASS, $className );
+				$result = array();
+				
+				while( $obj = $stmt -> fetch() )
+				{
+					$result[] = $obj;
+				}
+				
+				return $result;
 			}
 			else //return affected rows otherwise
 			{
