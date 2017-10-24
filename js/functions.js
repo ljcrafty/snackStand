@@ -15,8 +15,11 @@ function addToCart( id )
 			var rows = resp.substr(resp.lastIndexOf("\n"));
 			var text = '';
 			
+<<<<<<< Updated upstream
 			console.log(resp);
 			
+=======
+>>>>>>> Stashed changes
 			//redirect
 			if( resp.indexOf("<html>") != -1 )
 			{

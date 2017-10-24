@@ -323,7 +323,11 @@ class DB
 				}
 				else //someone has this item in their cart
 				{
+<<<<<<< Updated upstream
 					$exists = 0;
+=======
+					$exists = -1;
+>>>>>>> Stashed changes
 					
 					//look through rows
 					for( $i = 0; $i < count($result); $i++ )
@@ -337,7 +341,11 @@ class DB
 						}
 					}
 					
+<<<<<<< Updated upstream
 					if( $exists == 0 )//item is not already in user's cart
+=======
+					if( $exists == -1 )//item is not already in user's cart
+>>>>>>> Stashed changes
 					{
 						$params = array('id' => $newId, 'user' => $userId);
 						$query = 'INSERT INTO cart VALUES( :id, 1, :user )';
